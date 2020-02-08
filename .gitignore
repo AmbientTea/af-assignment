@@ -1,3 +1,4 @@
 *.sorted
 .vscode/*
 .~lock*
+*.csv
