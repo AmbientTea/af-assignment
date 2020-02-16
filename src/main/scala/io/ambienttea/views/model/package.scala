@@ -3,6 +3,8 @@ package io.ambienttea.views
 import java.text.SimpleDateFormat
 
 package object model {
+  trait ModelEvent
+
   type CampaignId = Long
 
   /* This needs to be a function returning a fresh instance,

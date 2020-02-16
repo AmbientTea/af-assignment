@@ -4,14 +4,12 @@ import java.time.Instant
 import scala.util.Try
 
 case class View(id: View.Id, logtime: Instant, campaignId: CampaignId)
+    extends ModelEvent
+
+case class ViewableView(view: View) extends ModelEvent
 
 object View {
   type Id = Long
-
-  def encodeCSV(view: View): String = {
-    import view._
-    s"$id,$logtime,$campaignId"
-  }
 
   def decode(csv: String): Try[View] =
     Try {
@@ -19,4 +17,11 @@ object View {
       val time = dateFormat.parse(logtime).toInstant
       View(id.toLong, time, campaignId.toLong)
     }
+}
+
+object ViewableView {
+  def encodeCSV(view: ViewableView): String = {
+    import view.view._
+    s"$id,$logtime,$campaignId"
+  }
 }

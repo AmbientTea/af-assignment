@@ -7,7 +7,7 @@ import java.net.URI
 
 import akka.actor.ActorSystem
 import akka.util.ByteString
-import io.ambienttea.views.model.{Click, View, ViewWithClick, ViewableViewEvent}
+import io.ambienttea.views.model.{Click, View, ViewWithClick, ViewableView, ViewableViewEvent}
 import io.ambienttea.views.stream.{MergeBy, Pipeline, WindowedJoin}
 import utils._
 import stream.DecodeCSV._
@@ -50,7 +50,8 @@ object Main extends LazyLogging {
         100
       )
       .map(_._1)
-      .map(View.encodeCSV)
+      .map(ViewableView.apply)
+      .map(ViewableView.encodeCSV)
 
     for {
       _ <- viewsWithClicks.runWith(fileSink("ViewsWithClicks.csv"))

@@ -8,7 +8,7 @@ case class ViewableViewEvent(
     id: ViewableViewEvent.Id,
     logtime: Instant,
     interactionId: View.Id
-)
+) extends ModelEvent
 
 object ViewableViewEvent {
   type Id = Long

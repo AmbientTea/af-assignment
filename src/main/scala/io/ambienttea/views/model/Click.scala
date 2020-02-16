@@ -9,7 +9,7 @@ case class Click(
     logtime: Instant,
     campaignId: CampaignId,
     interactionId: View.Id
-)
+) extends ModelEvent
 
 object Click {
   type Id = Long
