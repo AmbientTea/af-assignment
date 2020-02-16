@@ -21,5 +21,5 @@ print "98 percentile:", np.percentile(delays, 98)
 print "99 percentile:", np.percentile(delays, 99)
 
 
-plt.hist(delays, bins=100)
-plt.show()
+# plt.hist(delays, bins=100)
+# plt.show()
