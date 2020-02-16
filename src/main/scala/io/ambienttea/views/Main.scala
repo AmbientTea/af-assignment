@@ -8,7 +8,12 @@ import java.net.URI
 import akka.actor.ActorSystem
 import akka.util.ByteString
 import io.ambienttea.views.model.{Click, View, ViewableView}
+import io.ambienttea.views.stream.WindowedMerge
 import utils._
+import stream.DecodeCSV._
+
+import scala.concurrent.ExecutionContext
+import ExecutionContext.Implicits.global
 
 object Main extends LazyLogging {
   def main(args: Array[String]) {
@@ -20,31 +25,23 @@ object Main extends LazyLogging {
     implicit val ac: ActorSystem = ActorSystem()
 
     val viewsSource = fileSource(viewsFileName)
+      .decodeCSV(View.decode)
+
     val clicksSource = fileSource(clicksFileName)
+      .decodeCSV(Click.decode)
+
     val viewableViewsSource = fileSource(viewableViewsFileName)
+      .decodeCSV(ViewableView.decode)
 
-    viewsSource
-      .drop(1)
-      .take(1)
-      .map(View.decode)
-      .mapConcat(_.toOption.toSeq)
-      .runForeach(s => println(s">>> $s"))
-    clicksSource
-      .drop(1)
-      .take(1)
-      .map(Click.decode)
-      .mapConcat(_.toOption.toSeq)
-      .runForeach(s => println(s">>> $s"))
-    viewableViewsSource
-      .drop(1)
-      .take(1)
-      .map(ViewableView.decode)
-      .mapConcat(_.toOption.toSeq)
-      .runForeach(s => println(s">>> $s"))
+    val viewsWithClicksStream =
+      WindowedMerge(viewsSource, clicksSource)(_.logtime, _.logtime)
 
-
-
-    ac.terminate()
+    for {
+      _ <- viewsWithClicksStream.runForeach(s => println(s">>> $s"))
+//      _ <- viewsSource.runForeach(s => println(s">>> $s"))
+//      _ <- clicksSource.runForeach(s => println(s">>> $s"))
+      _ <- ac.terminate()
+    } yield ()
   }
 
 }
