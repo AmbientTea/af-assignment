@@ -33,15 +33,15 @@ object Main extends LazyLogging {
     val viewableViewsSource = fileSource(viewableViewsFileName)
       .decodeCSV(ViewableView.decode)
 
-    val viewsWithClicksStream =
-      WindowedMerge(viewsSource, clicksSource)(_.logtime, _.logtime)
-
-    for {
-      _ <- viewsWithClicksStream.runForeach(s => println(s">>> $s"))
-//      _ <- viewsSource.runForeach(s => println(s">>> $s"))
-//      _ <- clicksSource.runForeach(s => println(s">>> $s"))
-      _ <- ac.terminate()
-    } yield ()
+//    val viewsWithClicksStream =
+//      WindowedMerge(viewsSource, clicksSource)(_.logtime, _.logtime)
+//
+//    for {
+//      _ <- viewsWithClicksStream.runForeach(s => println(s">>> $s"))
+////      _ <- viewsSource.runForeach(s => println(s">>> $s"))
+////      _ <- clicksSource.runForeach(s => println(s">>> $s"))
+//      _ <- ac.terminate()
+//    } yield ()
   }
 
 }
