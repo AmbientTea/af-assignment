@@ -15,7 +15,7 @@ class WindowedJoinTest extends AsyncWordSpec with Matchers {
 
     "properly merge two sources" in {
       val mergedFlow =
-        WindowedJoin(source1, source2)(identity, identity)(
+        Pipeline(source1, source2)(identity, identity)(
           _ * 2,
           identity,
           100
@@ -30,7 +30,7 @@ class WindowedJoinTest extends AsyncWordSpec with Matchers {
 
     "properly merge two sources when window size is smaller than their size" in {
       val mergedFlow =
-        WindowedJoin(source1, source2)(identity, identity)(
+        Pipeline(source1, source2)(identity, identity)(
           _ * 2,
           identity,
           maxWindowSize = 2

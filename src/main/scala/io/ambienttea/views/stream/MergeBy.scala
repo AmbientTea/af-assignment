@@ -18,7 +18,7 @@ object MergeBy {
   )(
       cmp1: T1 => C,
       cmp2: T2 => C
-  ) = {
+  ): Source[Either[T1, T2], _] = {
     implicit val ord: Ordering[Either[T1, T2]] = Ordering.by {
       case Left(v)  => cmp1(v)
       case Right(v) => cmp2(v)
