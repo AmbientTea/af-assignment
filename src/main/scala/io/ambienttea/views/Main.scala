@@ -8,7 +8,7 @@ import java.net.URI
 import akka.actor.ActorSystem
 import akka.util.ByteString
 import io.ambienttea.views.model.{Click, View, ViewableView}
-import io.ambienttea.views.stream.WindowedMerge
+import io.ambienttea.views.stream.WindowedJoin
 import utils._
 import stream.DecodeCSV._
 

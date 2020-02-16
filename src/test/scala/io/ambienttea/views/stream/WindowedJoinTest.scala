@@ -5,7 +5,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import org.scalatest.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
-class WindowedMergeTest extends AsyncWordSpec with Matchers {
+class WindowedJoinTest extends AsyncWordSpec with Matchers {
 
   implicit val ac: ActorSystem = ActorSystem()
 
@@ -15,7 +15,7 @@ class WindowedMergeTest extends AsyncWordSpec with Matchers {
 
     "properly merge two sources" in {
       val mergedFlow =
-        WindowedMerge(source1, source2)(identity, identity)(
+        WindowedJoin(source1, source2)(identity, identity)(
           _ * 2,
           identity,
           100
@@ -30,7 +30,7 @@ class WindowedMergeTest extends AsyncWordSpec with Matchers {
 
     "properly merge two sources when window size is smaller than their size" in {
       val mergedFlow =
-        WindowedMerge(source1, source2)(identity, identity)(
+        WindowedJoin(source1, source2)(identity, identity)(
           _ * 2,
           identity,
           maxWindowSize = 2
