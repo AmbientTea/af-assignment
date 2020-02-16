@@ -1,19 +1,14 @@
 package io.ambienttea.views
 
-import com.typesafe.scalalogging.LazyLogging
-import akka.stream.scaladsl.{FileIO, Framing, Source}
-import java.nio.file.{Path, Paths}
-import java.net.URI
-
 import akka.actor.ActorSystem
-import akka.util.ByteString
-import io.ambienttea.views.model.{Click, View, ViewWithClick, ViewableView, ViewableViewEvent}
-import io.ambienttea.views.stream.{MergeBy, Pipeline, WindowedJoin}
-import utils._
-import stream.DecodeCSV._
+import com.typesafe.scalalogging.LazyLogging
+import io.ambienttea.views.model._
+import io.ambienttea.views.stream.DecodeCSV._
+import io.ambienttea.views.stream.Pipeline
+import io.ambienttea.views.utils._
 
 import scala.concurrent.ExecutionContext
-import ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object Main extends LazyLogging {
   def main(args: Array[String]) {
@@ -39,23 +34,24 @@ object Main extends LazyLogging {
         _.interactionId,
         100
       ).map {
-          case (view, click) => ViewWithClick.fromViewAndClick(view, click)
-        }
-        .map(ViewWithClick.encodeCSV)
+        case (view, click) => ViewWithClick.fromViewAndClick(view, click)
+      }
 
     val viewableViews =
       Pipeline(viewsSource, viewableViewEventsSource)(_.logtime, _.logtime)(
         _.id,
         _.interactionId,
         100
-      )
-      .map(_._1)
-      .map(ViewableView.apply)
-      .map(ViewableView.encodeCSV)
+      ).map(_._1)
+        .map(ViewableView.apply)
 
     for {
-      _ <- viewsWithClicks.runWith(fileSink("ViewsWithClicks.csv"))
-      _ <- viewableViews.runWith(fileSink("ViewableViews.csv"))
+      _ <- viewsWithClicks
+        .map(ViewWithClick.encodeCSV)
+        .runWith(fileSink("ViewsWithClicks.csv"))
+      _ <- viewableViews
+        .map(ViewableView.encodeCSV)
+        .runWith(fileSink("ViewableViews.csv"))
       _ <- ac.terminate()
     } yield ()
   }
