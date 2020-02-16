@@ -7,8 +7,8 @@ import java.net.URI
 
 import akka.actor.ActorSystem
 import akka.util.ByteString
-import io.ambienttea.views.model.{Click, View, ViewableViewEvent}
-import io.ambienttea.views.stream.WindowedJoin
+import io.ambienttea.views.model.{Click, View, ViewWithClick, ViewableViewEvent}
+import io.ambienttea.views.stream.{MergeBy, Pipeline, WindowedJoin}
 import utils._
 import stream.DecodeCSV._
 
@@ -33,15 +33,20 @@ object Main extends LazyLogging {
     val viewableViewEventsSource = fileSource(viewableViewsFileName)
       .decodeCSV(ViewableViewEvent.decode)
 
-//    val viewsWithClicksStream =
-//      WindowedMerge(viewsSource, clicksSource)(_.logtime, _.logtime)
-//
-//    for {
-//      _ <- viewsWithClicksStream.runForeach(s => println(s">>> $s"))
-////      _ <- viewsSource.runForeach(s => println(s">>> $s"))
-////      _ <- clicksSource.runForeach(s => println(s">>> $s"))
-//      _ <- ac.terminate()
-//    } yield ()
+    val viewsWithClicks =
+      Pipeline(viewsSource, clicksSource)(_.logtime, _.logtime)(
+        _.id,
+        _.interactionId,
+        100
+      ).map {
+          case (view, click) => ViewWithClick.fromViewAndClick(view, click)
+        }
+        .map(ViewWithClick.encodeCSV)
+
+    for {
+      _ <- viewsWithClicks.runWith(fileSink("ViewsWithClicks.csv"))
+      _ <- ac.terminate()
+    } yield ()
   }
 
 }
