@@ -30,7 +30,7 @@ object Main extends LazyLogging {
     val clicksSource = fileSource(clicksFileName)
       .decodeCSV(Click.decode)
 
-    val viewableViewsSource = fileSource(viewableViewsFileName)
+    val viewableViewEventsSource = fileSource(viewableViewsFileName)
       .decodeCSV(ViewableViewEvent.decode)
 
 //    val viewsWithClicksStream =
