@@ -43,8 +43,18 @@ object Main extends LazyLogging {
         }
         .map(ViewWithClick.encodeCSV)
 
+    val viewableViews =
+      Pipeline(viewsSource, viewableViewEventsSource)(_.logtime, _.logtime)(
+        _.id,
+        _.interactionId,
+        100
+      )
+      .map(_._1)
+      .map(View.encodeCSV)
+
     for {
       _ <- viewsWithClicks.runWith(fileSink("ViewsWithClicks.csv"))
+      _ <- viewableViews.runWith(fileSink("ViewableViews.csv"))
       _ <- ac.terminate()
     } yield ()
   }
