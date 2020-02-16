@@ -4,19 +4,19 @@ import java.time.Instant
 
 import scala.util.Try
 
-case class ViewableView(
-    id: ViewableView.Id,
+case class ViewableViewEvent(
+    id: ViewableViewEvent.Id,
     logtime: Instant,
     interactionId: View.Id
 )
 
-object ViewableView {
+object ViewableViewEvent {
   type Id = Long
 
-  def decode(csv: String): Try[ViewableView] =
+  def decode(csv: String): Try[ViewableViewEvent] =
     Try {
       val Array(id, logtime, intId) = csv.split(",")
       val time = dateFormat.parse(logtime).toInstant
-      ViewableView(id.toLong, time, intId.toLong)
+      ViewableViewEvent(id.toLong, time, intId.toLong)
     }
 }

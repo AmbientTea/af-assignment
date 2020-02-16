@@ -7,7 +7,7 @@ import java.net.URI
 
 import akka.actor.ActorSystem
 import akka.util.ByteString
-import io.ambienttea.views.model.{Click, View, ViewableView}
+import io.ambienttea.views.model.{Click, View, ViewableViewEvent}
 import io.ambienttea.views.stream.WindowedJoin
 import utils._
 import stream.DecodeCSV._
@@ -31,7 +31,7 @@ object Main extends LazyLogging {
       .decodeCSV(Click.decode)
 
     val viewableViewsSource = fileSource(viewableViewsFileName)
-      .decodeCSV(ViewableView.decode)
+      .decodeCSV(ViewableViewEvent.decode)
 
 //    val viewsWithClicksStream =
 //      WindowedMerge(viewsSource, clicksSource)(_.logtime, _.logtime)
