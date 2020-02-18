@@ -1,6 +1,8 @@
 package io.ambienttea.views.stream
 
-import akka.stream.scaladsl.Source
+import akka.stream.FanInShape2
+import akka.stream.scaladsl.{GraphDSL, MergeSorted, RunnableGraph, Source}
+
 
 object MergeBy {
 
@@ -25,5 +27,4 @@ object MergeBy {
     }
     source1.map(Left.apply) mergeSorted source2.map(Right.apply)
   }
-
 }

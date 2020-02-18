@@ -18,10 +18,10 @@ object WindowedJoin {
     source.mapConcat(window.push)
   }
 
-  private class Window[T1, T2, J](
+  class Window[T1, T2, J](
       join1: T1 => J,
       join2: T2 => J,
-      maxWindowSize: Int
+      maxWindowSize: Int = 100
   ) {
     val queue = new mutable.ArrayDeque[Either[T1, T2]]()
     val lefts = new mutable.HashMap[J, T1]()
