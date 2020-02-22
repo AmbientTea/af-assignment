@@ -90,23 +90,7 @@ object Main extends LazyLogging {
 
         ClosedShape
     })
-
-//    for {
-//      _ <- viewsWithClicks
-//        .map(ViewWithClick.encodeCSV)
-//        .runWith(fileSink("ViewsWithClicks.csv"))
-//      _ <- viewableViews
-//        .map(ViewableView.encodeCSV)
-//        .runWith(fileSink("ViewableViews.csv"))
-//      _ <- ac.terminate()
-//    } yield ()
-    try {
       graph.run()
-
-    } finally  {
-      ac.terminate()
-
-    }
 
   }
 
