@@ -47,12 +47,8 @@ object Main extends LazyLogging {
         implicit b: GraphDSL.Builder[Future[IOResult]] => statsSink =>
           import GraphDSL.Implicits._
 
-          val clicksBc = b.add(Broadcast[Either[Nothing, Click]](2))
-          val viewsBc = b.add(Broadcast[Either[View, Nothing]](3))
-
-          val views = viewsSource.map(Left.apply)
-          val clicks = clicksSource.map(Right.apply)
-          val viewableViewEvents = viewableViewEventsSource.map(Right.apply)
+          val clicksBc = b.add(Broadcast[Click](2))
+          val viewsBc = b.add(Broadcast[View](3))
 
           val viewsClicksJoin = b.add(
             WindowedJoin.shape[View, Click, Instant, View.Id](
@@ -72,14 +68,12 @@ object Main extends LazyLogging {
           )
           val mergeForStats = b.add(new Merge[ModelEvent](3, false))
 
-          clicks ~> clicksBc ~> viewsClicksJoin.in0
-          clicksBc ~> Flow[Either[Nothing, Click]]
-            .mapConcat(_.toOption.toSeq) ~> mergeForStats.in(0)
-          views ~> viewsBc ~> viewsClicksJoin.in1
+          clicksSource ~> clicksBc ~> viewsClicksJoin.in1
+          clicksBc  ~> mergeForStats.in(0)
+          viewsSource ~> viewsBc ~> viewsClicksJoin.in0
           viewsBc ~> viewsEventsJoin.in0
-          viewsBc ~> Flow[Either[View, Nothing]]
-            .mapConcat(_.left.toOption.toSeq) ~> mergeForStats.in(1)
-          viewableViewEvents ~> viewsEventsJoin.in1
+          viewsBc  ~> mergeForStats.in(1)
+          viewableViewEventsSource ~> viewsEventsJoin.in1
 
           val viewsWithClicksCSV = viewsClicksJoin.out
             .map { case (v, c) => ViewWithClick.fromViewAndClick(v, c) }
