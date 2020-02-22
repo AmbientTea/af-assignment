@@ -1,12 +1,14 @@
 package io.ambienttea.views.model
 
 import akka.NotUsed
-import akka.stream.scaladsl.{Flow, Sink}
+import akka.stream.IOResult
+import akka.stream.scaladsl.{Flow, Keep, Sink}
 import com.typesafe.scalalogging.StrictLogging
 import io.ambienttea.views.model
 import io.ambienttea.views.utils._
 
 import scala.collection.mutable
+import scala.concurrent.Future
 
 class Stats extends StrictLogging {
   val campaigns = new mutable.HashMap[CampaignId, Stats.CampaignStats]()
@@ -50,19 +52,16 @@ object Stats {
     def addViewable(): CampaignStats = copy(viewableViews = viewableViews + 1)
   }
 
-  def sink: Flow[ModelEvent, Stats, NotUsed] = {
+  def sink: Sink[ModelEvent, Future[IOResult]] = {
     Flow[ModelEvent]
       .fold(new Stats()) {
         case (stats, event) =>
           stats.add(event)
           stats
       }
-      .alsoTo(
-        Flow
-          .fromFunction(Stats.encodeCSV)
-          .mapConcat(_.toSeq)
-          .to(fileSink("statistics.csv"))
-      )
+      .map(Stats.encodeCSV)
+      .mapConcat(_.toSeq)
+      .toMat(fileSink("statistics.csv"))(Keep.right)
   }
 
   def encodeCSV(stats: Stats): mutable.Iterable[String] = {
