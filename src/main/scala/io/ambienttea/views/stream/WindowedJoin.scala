@@ -1,6 +1,10 @@
 package io.ambienttea.views.stream
 
-import akka.stream.scaladsl.Source
+import akka.NotUsed
+import akka.stream._
+import akka.stream.scaladsl.{GraphDSL, MergeSorted, Source}
+import akka.stream.stage.{GraphStage, GraphStageLogic}
+import io.ambienttea.views.model.{Click, View}
 
 import scala.collection.mutable
 
@@ -17,6 +21,29 @@ object WindowedJoin {
     val window = new Window[T1, T2, J](join1, join2, maxWindowSize)
     source.mapConcat(window.push)
   }
+
+  def shape[T1, T2, C: Ordering, J](
+      source: Source[Either[T1, T2], _],
+      join1: T1 => J,
+      join2: T2 => J,
+      cmp1: T1 => C,
+      cmp2: T2 => C,
+      maxWindowSize: Int
+  ): Graph[FanInShape2[Either[T1, T2], Either[T1, T2], (T1, T2)], NotUsed] =
+    GraphDSL.create() { implicit b =>
+      import GraphDSL.Implicits._
+      implicit val ord: Ordering[Either[T1, T2]] = Ordering.by {
+        case Left(value) => cmp1(value)
+        case Right(value) => cmp2(value)
+      }
+
+      val window = new Window[T1, T2, J](join1, join2, maxWindowSize)
+
+      val merge = b.add(new MergeSorted[Either[T1, T2]]())
+      val joined = merge.out.mapConcat(window.push)
+
+      new FanInShape2(merge.in0, merge.in1, joined.outlet)
+    }
 
   class Window[T1, T2, J](
       join1: T1 => J,
