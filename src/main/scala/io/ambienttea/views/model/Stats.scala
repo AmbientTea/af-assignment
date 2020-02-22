@@ -4,6 +4,7 @@ import akka.NotUsed
 import akka.stream.scaladsl.{Flow, Sink}
 import com.typesafe.scalalogging.StrictLogging
 import io.ambienttea.views.model
+import io.ambienttea.views.utils._
 
 import scala.collection.mutable
 
@@ -50,11 +51,18 @@ object Stats {
   }
 
   def sink: Flow[ModelEvent, Stats, NotUsed] = {
-    Flow[ModelEvent].fold(new Stats()) {
-      case (stats, event) =>
-        stats.add(event)
-        stats
-    }
+    Flow[ModelEvent]
+      .fold(new Stats()) {
+        case (stats, event) =>
+          stats.add(event)
+          stats
+      }
+      .alsoTo(
+        Flow
+          .fromFunction(Stats.encodeCSV)
+          .mapConcat(_.toSeq)
+          .to(fileSink("statistics.csv"))
+      )
   }
 
   def encodeCSV(stats: Stats): mutable.Iterable[String] = {
