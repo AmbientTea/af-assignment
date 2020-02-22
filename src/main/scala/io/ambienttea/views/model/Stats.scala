@@ -45,7 +45,7 @@ object Stats {
       clicks: Long = 0,
       viewableViews: Long = 0
   ) {
-    def clickThrough: CampaignId = (clicks * 100 / views)
+    def clickThrough: Double = (clicks.toDouble * 100d / views.toDouble )
 
     def addClick(): CampaignStats = copy(clicks = clicks + 1)
     def addView(): CampaignStats = copy(views = views + 1)

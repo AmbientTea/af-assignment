@@ -49,6 +49,7 @@ object Main extends LazyLogging {
 
           val clicksBc = b.add(Broadcast[Click](2))
           val viewsBc = b.add(Broadcast[View](3))
+          val viewableViewsBc = b.add(Broadcast[ViewableView](2))
 
           val viewsClicksJoin = b.add(
             WindowedJoin.shape[View, Click, Instant, View.Id](
@@ -84,7 +85,6 @@ object Main extends LazyLogging {
           val viewableViews = viewsEventsJoin.out
             .map(_._1)
             .map(ViewableView.apply)
-          val viewableViewsBc = b.add(Broadcast[ViewableView](2))
 
           viewableViews.outlet ~> viewableViewsBc
           viewableViewsBc.outlet.map(ViewableView.encodeCSV) ~> fileSink(
