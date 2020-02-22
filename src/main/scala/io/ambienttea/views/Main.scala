@@ -1,11 +1,14 @@
 package io.ambienttea.views
 
+import java.time.Instant
+
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.scaladsl._
 import com.typesafe.scalalogging.LazyLogging
 import io.ambienttea.views.model._
 import io.ambienttea.views.stream.DecodeCSV._
+import io.ambienttea.views.stream.WindowedJoin
 import io.ambienttea.views.stream.WindowedJoin.Window
 import io.ambienttea.views.utils._
 
@@ -51,33 +54,40 @@ object Main extends LazyLogging {
           val clicks = clicksSource.map(Right.apply)
           val viewableViewEvents = viewableViewEventsSource.map(Right.apply)
 
-          val viewsClicksMerge = b.add(new MergeSorted[Either[View, Click]]())
-          val viewsEventsMerge =
-            b.add(new MergeSorted[Either[View, ViewableViewEvent]]())
+          val viewsClicksJoin = b.add(
+            WindowedJoin.shape[View, Click, Instant, View.Id](
+              _.id,
+              _.interactionId,
+              _.logtime,
+              _.logtime
+            )
+          )
+          val viewsEventsJoin = b.add(
+            WindowedJoin.shape[View, ViewableViewEvent, Instant, View.Id](
+              _.id,
+              _.interactionId,
+              _.logtime,
+              _.logtime
+            )
+          )
           val mergeForStats = b.add(new Merge[ModelEvent](3, false))
 
-          clicks ~> clicksBc ~> viewsClicksMerge.in0
+          clicks ~> clicksBc ~> viewsClicksJoin.in0
           clicksBc ~> Flow[Either[Nothing, Click]]
             .mapConcat(_.toOption.toSeq) ~> mergeForStats.in(0)
-          views ~> viewsBc ~> viewsClicksMerge.in1
-          viewsBc ~> viewsEventsMerge.in0
+          views ~> viewsBc ~> viewsClicksJoin.in1
+          viewsBc ~> viewsEventsJoin.in0
           viewsBc ~> Flow[Either[View, Nothing]]
             .mapConcat(_.left.toOption.toSeq) ~> mergeForStats.in(1)
-          viewableViewEvents ~> viewsEventsMerge.in1
+          viewableViewEvents ~> viewsEventsJoin.in1
 
-          val viewsClicksWindow =
-            new Window[View, Click, View.Id](_.id, _.interactionId)
-          val viewsWithClicksCSV = viewsClicksMerge.out
-            .mapConcat(viewsClicksWindow.push)
+          val viewsWithClicksCSV = viewsClicksJoin.out
             .map { case (v, c) => ViewWithClick.fromViewAndClick(v, c) }
             .map(ViewWithClick.encodeCSV)
 
           viewsWithClicksCSV.outlet ~> fileSink("ViewsWithClicks.csv")
 
-          val viewsEventsWindow =
-            new Window[View, ViewableViewEvent, View.Id](_.id, _.interactionId)
-          val viewableViews = viewsEventsMerge.out
-            .mapConcat(viewsEventsWindow.push)
+          val viewableViews = viewsEventsJoin.out
             .map(_._1)
             .map(ViewableView.apply)
           val viewableViewsBc = b.add(Broadcast[ViewableView](2))
@@ -93,7 +103,11 @@ object Main extends LazyLogging {
           ClosedShape
       })
 
-    graph.run().andThen { case _ => ac.terminate() }
+    try {
+      graph.run().andThen { case _ => ac.terminate() }
+    } catch {
+      case _: Throwable => ac.terminate()
+    }
 
   }
 

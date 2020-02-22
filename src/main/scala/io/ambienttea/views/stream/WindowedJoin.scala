@@ -23,12 +23,11 @@ object WindowedJoin {
   }
 
   def shape[T1, T2, C: Ordering, J](
-      source: Source[Either[T1, T2], _],
       join1: T1 => J,
       join2: T2 => J,
       cmp1: T1 => C,
       cmp2: T2 => C,
-      maxWindowSize: Int
+      maxWindowSize: Int = 100
   ): Graph[FanInShape2[Either[T1, T2], Either[T1, T2], (T1, T2)], NotUsed] =
     GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
