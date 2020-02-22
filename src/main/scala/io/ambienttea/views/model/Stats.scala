@@ -56,4 +56,13 @@ object Stats {
         stats
     }
   }
+
+  def encodeCSV(stats: Stats): mutable.Iterable[String] = {
+    for ((campaignId, stats) <- stats.campaigns)
+      yield {
+        import stats._
+        s"$campaignId,$views,$clicks,$viewableViews,$clickThrough"
+      }
+
+  }
 }
