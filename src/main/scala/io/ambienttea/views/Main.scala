@@ -42,6 +42,8 @@ object Main extends LazyLogging {
           val viewsBc = b.add(Broadcast[View](3))
           val viewableViewsBc = b.add(Broadcast[ViewableView](2))
 
+          val mergeForStats = b.add(new Merge[ModelEvent](3, false))
+
           val viewsClicksJoin = b.add(
             WindowedJoin.shape[View, Click, Instant, View.Id](
               _.id,
@@ -58,27 +60,24 @@ object Main extends LazyLogging {
               _.logtime
             )
           )
-          val mergeForStats = b.add(new Merge[ModelEvent](3, false))
 
           clicksSource ~> clicksBc ~> viewsClicksJoin.in1
-          clicksBc ~> mergeForStats.in(0)
           viewsSource ~> viewsBc ~> viewsClicksJoin.in0
           viewsBc ~> viewsEventsJoin.in0
-          viewsBc ~> mergeForStats.in(1)
           viewableViewEventsSource ~> viewsEventsJoin.in1
 
-          val viewsWithClicks = viewsClicksJoin.out
-            .map { case (v, c) => ViewWithClick.fromViewAndClick(v, c) }
-
-          viewsWithClicks.outlet ~>
+          viewsClicksJoin.out
+            .map { case (v, c) => ViewWithClick.fromViewAndClick(v, c) } ~>
             fileSink(ViewWithClick.encodeCSV, "ViewsWithClicks.csv")
 
-          val viewableViews = viewsEventsJoin.out
-            .map { case (view, _) => ViewableView(view) }
+          viewsEventsJoin.out.map { case (view, _) => ViewableView(view) } ~>
+            viewableViewsBc
 
-          viewableViews.outlet ~> viewableViewsBc
           viewableViewsBc ~>
             fileSink(ViewableView.encodeCSV, "ViewableViews.csv")
+
+          clicksBc ~> mergeForStats.in(0)
+          viewsBc ~> mergeForStats.in(1)
           viewableViewsBc ~> mergeForStats.in(2)
 
           mergeForStats ~> statsSink
