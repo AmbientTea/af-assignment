@@ -23,4 +23,10 @@ package object utils {
       .contramap[String](ByteString.fromString)
       .contramap(_ + "\n")
   }
+
+  def fileSink[T](
+      encode: T => String,
+      filename: String
+  ): Sink[T, Future[IOResult]] =
+    fileSink(filename).contramap(encode)
 }

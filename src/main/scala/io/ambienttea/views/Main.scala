@@ -70,26 +70,24 @@ object Main extends LazyLogging {
           val mergeForStats = b.add(new Merge[ModelEvent](3, false))
 
           clicksSource ~> clicksBc ~> viewsClicksJoin.in1
-          clicksBc  ~> mergeForStats.in(0)
+          clicksBc ~> mergeForStats.in(0)
           viewsSource ~> viewsBc ~> viewsClicksJoin.in0
           viewsBc ~> viewsEventsJoin.in0
-          viewsBc  ~> mergeForStats.in(1)
+          viewsBc ~> mergeForStats.in(1)
           viewableViewEventsSource ~> viewsEventsJoin.in1
 
-          val viewsWithClicksCSV = viewsClicksJoin.out
+          val viewsWithClicks = viewsClicksJoin.out
             .map { case (v, c) => ViewWithClick.fromViewAndClick(v, c) }
-            .map(ViewWithClick.encodeCSV)
 
-          viewsWithClicksCSV.outlet ~> fileSink("ViewsWithClicks.csv")
+          viewsWithClicks.outlet ~>
+            fileSink(ViewWithClick.encodeCSV, "ViewsWithClicks.csv")
 
           val viewableViews = viewsEventsJoin.out
-            .map(_._1)
-            .map(ViewableView.apply)
+            .map { case (view, _) => ViewableView(view) }
 
           viewableViews.outlet ~> viewableViewsBc
-          viewableViewsBc.outlet.map(ViewableView.encodeCSV) ~> fileSink(
-            "ViewableViews.csv"
-          )
+          viewableViewsBc ~>
+            fileSink(ViewableView.encodeCSV, "ViewableViews.csv")
           viewableViewsBc ~> mergeForStats.in(2)
 
           mergeForStats ~> statsSink
@@ -100,7 +98,7 @@ object Main extends LazyLogging {
     try {
       graph.run().andThen { case _ => ac.terminate() }
     } catch {
-      case _: Throwable => ac.terminate()
+      case _: Exception => ac.terminate()
     }
 
   }
