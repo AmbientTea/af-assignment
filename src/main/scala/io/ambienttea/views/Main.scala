@@ -33,15 +33,6 @@ object Main extends LazyLogging {
     val viewableViewEventsSource = fileSource(viewableViewsFileName)
       .decodeCSV(ViewableViewEvent.decode)
 
-    implicit val ord1: Ordering[Either[View, Click]] = Ordering.by {
-      case Left(v)  => v.logtime
-      case Right(v) => v.logtime
-    }
-    implicit val ord2: Ordering[Either[View, ViewableViewEvent]] = Ordering.by {
-      case Left(v)  => v.logtime
-      case Right(v) => v.logtime
-    }
-
     val graph =
       RunnableGraph.fromGraph[Future[IOResult]](GraphDSL.create(Stats.sink) {
         implicit b: GraphDSL.Builder[Future[IOResult]] => statsSink =>
