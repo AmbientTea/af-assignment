@@ -1,6 +1,5 @@
 package io.ambienttea.views.model
 
-import akka.NotUsed
 import akka.stream.IOResult
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import com.typesafe.scalalogging.StrictLogging

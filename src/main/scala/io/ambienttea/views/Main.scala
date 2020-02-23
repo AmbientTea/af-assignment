@@ -9,7 +9,6 @@ import com.typesafe.scalalogging.LazyLogging
 import io.ambienttea.views.model._
 import io.ambienttea.views.stream.DecodeCSV._
 import io.ambienttea.views.stream.WindowedJoin
-import io.ambienttea.views.stream.WindowedJoin.Window
 import io.ambienttea.views.utils._
 
 import scala.concurrent.ExecutionContext.Implicits.global
