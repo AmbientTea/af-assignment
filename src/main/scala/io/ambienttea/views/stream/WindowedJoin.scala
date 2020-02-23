@@ -11,7 +11,7 @@ import io.ambienttea.views.model.{Click, OrderedBy, RelatedBy, View}
 import scala.collection.mutable
 
 object WindowedJoin {
-  /* Joins stream elements by the key produced by `join1` and `join2` within a window
+  /* Joins stream elements by `relation` within a window
    * specified by the distance cut-off function `outOfWindow`.
    */
   def shape[T1, T2, C: Ordering, J](
