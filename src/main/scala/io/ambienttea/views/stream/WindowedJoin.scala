@@ -19,7 +19,7 @@ object WindowedJoin {
       join2: T2 => J,
       cmp1: T1 => C,
       cmp2: T2 => C,
-      outOfWindow: (C, C) => Boolean
+      withinWindow: (C, C) => Boolean
   ): Graph[FanInShape2[T1, T2, (T1, T2)], NotUsed] =
     GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
@@ -32,7 +32,7 @@ object WindowedJoin {
       val in1 = b.add(Flow[T2].map(Right.apply))
 
       val window =
-        new Window[T1, T2, C, J](join1, join2, cmp1, cmp2, outOfWindow)
+        new Window[T1, T2, C, J](join1, join2, cmp1, cmp2, withinWindow)
 
       val merge = b.add(new MergeSorted[Either[T1, T2]]())
 
@@ -46,12 +46,15 @@ object WindowedJoin {
   def withinNMinutes(m: Int)(i1: Instant, i2: Instant): Boolean =
     Duration.between(i1, i2).toMinutes <= m
 
+  /* A generic sliding window. Emits matching pairs when new element is added.
+   * Uses `ord1 withinWindow ord2` to determine whether to prune the internal queue.
+   */
   class Window[T1, T2, C: Ordering, J](
       join1: T1 => J,
       join2: T2 => J,
       ord1: T1 => C,
       ord2: T2 => C,
-      outOfWindow: (C, C) => Boolean
+      withinWindow: (C, C) => Boolean
   )(implicit ord: Ordering[Either[T1, T2]]) {
     val queue = new mutable.PriorityQueue[Either[T1, T2]]()
     val lefts = new mutable.HashMap[J, T1]()
@@ -77,7 +80,7 @@ object WindowedJoin {
     def ord(e: Either[T1, T2]): C = e.fold(ord1, ord2)
 
     def removeOldest(newVal: Either[T1, T2]): Unit = {
-      while (queue.nonEmpty && outOfWindow(ord(newVal), ord(queue.head))) {
+      while (queue.nonEmpty && !withinWindow(ord(newVal), ord(queue.head))) {
         queue.dequeue()
       }
     }
