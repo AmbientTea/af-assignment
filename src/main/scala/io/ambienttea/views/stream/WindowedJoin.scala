@@ -6,7 +6,7 @@ import akka.NotUsed
 import akka.stream._
 import akka.stream.scaladsl.{Flow, GraphDSL, MergeSorted, Source}
 import akka.stream.stage.{GraphStage, GraphStageLogic}
-import io.ambienttea.views.model.{Click, View}
+import io.ambienttea.views.model.{Click, OrderedBy, RelatedBy, View}
 
 import scala.collection.mutable
 
@@ -15,24 +15,24 @@ object WindowedJoin {
    * specified by the distance cut-off function `outOfWindow`.
    */
   def shape[T1, T2, C: Ordering, J](
-      join1: T1 => J,
-      join2: T2 => J,
-      cmp1: T1 => C,
-      cmp2: T2 => C,
       withinWindow: (C, C) => Boolean
+  )(
+      implicit
+      relation: RelatedBy[T1, T2, J],
+      ord1: OrderedBy[T1, C],
+      ord2: OrderedBy[T2, C]
   ): Graph[FanInShape2[T1, T2, (T1, T2)], NotUsed] =
     GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
       implicit val ord: Ordering[Either[T1, T2]] = Ordering.by {
-        case Left(value)  => cmp1(value)
-        case Right(value) => cmp2(value)
+        case Left(value)  => ord1.ord(value)
+        case Right(value) => ord2.ord(value)
       }
 
       val in0 = b.add(Flow[T1].map(Left.apply))
       val in1 = b.add(Flow[T2].map(Right.apply))
 
-      val window =
-        new Window[T1, T2, C, J](join1, join2, cmp1, cmp2, withinWindow)
+      val window = new Window[T1, T2, C, J](withinWindow)
 
       val merge = b.add(new MergeSorted[Either[T1, T2]]())
 
@@ -50,12 +50,14 @@ object WindowedJoin {
    * Uses `ord1 withinWindow ord2` to determine whether to prune the internal queue.
    */
   class Window[T1, T2, C: Ordering, J](
-      join1: T1 => J,
-      join2: T2 => J,
-      ord1: T1 => C,
-      ord2: T2 => C,
       withinWindow: (C, C) => Boolean
-  )(implicit ord: Ordering[Either[T1, T2]]) {
+  )(
+      implicit ord: Ordering[Either[T1, T2]],
+      relation: RelatedBy[T1, T2, J],
+      ord1: OrderedBy[T1, C],
+      ord2: OrderedBy[T2, C]
+  ) {
+    import relation._
     val queue = new mutable.PriorityQueue[Either[T1, T2]]()
     val lefts = new mutable.HashMap[J, T1]()
     val rights = new mutable.HashMap[J, T2]()
@@ -77,7 +79,7 @@ object WindowedJoin {
       }).toSeq
     }
 
-    def ord(e: Either[T1, T2]): C = e.fold(ord1, ord2)
+    def ord(e: Either[T1, T2]): C = e.fold(ord1.ord, ord2.ord)
 
     def removeOldest(newVal: Either[T1, T2]): Unit = {
       while (queue.nonEmpty && !withinWindow(ord(newVal), ord(queue.head))) {

@@ -45,19 +45,11 @@ object Main extends LazyLogging {
 
           val viewsClicksJoin = b.add(
             WindowedJoin.shape[View, Click, Instant, View.Id](
-              _.id,
-              _.interactionId,
-              _.logtime,
-              _.logtime,
               WindowedJoin.withinNMinutes(30)
             )
           )
           val viewsEventsJoin = b.add(
             WindowedJoin.shape[View, ViewableViewEvent, Instant, View.Id](
-              _.id,
-              _.interactionId,
-              _.logtime,
-              _.logtime,
               WindowedJoin.withinNMinutes(30)
             )
           )

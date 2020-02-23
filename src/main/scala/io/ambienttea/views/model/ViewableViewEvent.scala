@@ -19,4 +19,10 @@ object ViewableViewEvent {
       val time = dateFormat.parse(logtime).toInstant
       ViewableViewEvent(id.toLong, time, intId.toLong)
     }
+
+  implicit val orderedByInstant: OrderedBy[ViewableViewEvent, Instant] =
+    new OrderedBy(_.logtime)
+
+  implicit val relatedToView: RelatedBy[View, ViewableViewEvent, View.Id] =
+    new RelatedBy(_.id, _.interactionId)
 }

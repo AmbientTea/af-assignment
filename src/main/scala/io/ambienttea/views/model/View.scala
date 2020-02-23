@@ -17,6 +17,9 @@ object View {
       val time = dateFormat.parse(logtime).toInstant
       View(id.toLong, time, campaignId.toLong)
     }
+
+  implicit val orderedByInstant: OrderedBy[View, Instant] =
+    new OrderedBy(_.logtime)
 }
 
 object ViewableView {
