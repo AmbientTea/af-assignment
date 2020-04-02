@@ -1,6 +1,6 @@
 # Description
 
-Joining of streams using a sliding temporal window using akka-streams.
+Joining of streams using a sliding temporal window using akka-streams. More info in `data_processing_exercise.md`.
 
 # Running
 
